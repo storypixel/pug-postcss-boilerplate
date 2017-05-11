@@ -13,6 +13,14 @@ var commitsAdded = document.getElementById('commits-added');
 var commitsRemoved = document.getElementById('commits-removed');
 var codes = []; // stores code snippets for faster display
 
+// DOM element holders
+var commitDesc;
+var commitAdded;
+var commitRemoved;
+var commitCode;
+var commitNumber;
+
+
 // The red and the green. it's possible to pass three numbers to generate a color e.g. 1, 0, .5 hence the arrays
 const vcolors = {
   additions : [0x8de8c3],
@@ -39,11 +47,11 @@ function updateInfo(o) {
     return
   }
 
-  var commitDesc = document.getElementById('commit-desc');
-  var commitAdded = document.getElementById('commit-added');
-  var commitRemoved = document.getElementById('commit-removed');
-  var commitCode = document.getElementById('commit-code');
-  var commitNumber = document.getElementById('commit-number');
+  commitDesc = document.getElementById('commit-desc');
+  commitAdded = document.getElementById('commit-added');
+  commitRemoved = document.getElementById('commit-removed');
+  commitCode = document.getElementById('commit-code');
+  commitNumber = document.getElementById('commit-number');
 
   var stat = ghData.statsResponse.find(x => x.sha === o.id);
 
@@ -55,20 +63,7 @@ function updateInfo(o) {
 
     // console.log(stat)
 
-    // codeSample = codes[o.id] || stat.files.reduce( (prev, curr) => {
-    //   prev = ( isString(prev) ? prev : '' ) + (curr.patch || '') + '\n\n'
-    // }, '' );
-
-    codeSample = codes[o.id] || stat.files.reduce(
-      (prev, curr) => {
-        // var next = curr.patch
-        // if (next == '[object Object]') {
-        //   next = 'mango'
-        // }
-        return prev + curr.patch
-      },
-      10
-    );
+    codeSample = codes[o.id] || stat.files.reduce((prev, curr) => prev + curr.patch, 10);
 
     // for performance let's store our collated codes
     if (!codes[o.id]) {
@@ -81,12 +76,80 @@ function updateInfo(o) {
   // console.log(codeSample)
 
   commitNumber.innerText = ' ' + stat.commit.tree.sha;
-  commitCode.innerText = codeSample === '[object Object]' ? 'empty' : codeSample;
+  // commitCode.innerText = codeSample;
+  animateCommit(codeSample);
   commitDesc.innerHTML = `<a title="Explore this commit on Github" href="${stat.html_url}" target="_blank">${stat.commit.message}</a>`;
   commitAdded.innerHTML = "+" + stat.stats.additions;
   commitRemoved.innerHTML = "-" + stat.stats.deletions;
 
   return currLineId = o.id
+}
+
+var animateIn, animateOut;
+
+function animateTextOut(txt) {
+  clearInterval(animateOut);
+  var fromText = commitCode.innerText.split(' ');
+
+  animateOut = setInterval(
+    () => {
+      commitCode.innerText = fromText.join(' ');
+      fromText.pop();
+      if (!fromText.length) {
+        clearInterval(animateOut);
+        animateTextIn(txt)
+      }
+    }, 50);
+}
+
+function animateTextIn(txt) {
+  clearInterval(animateIn);
+  var toText = txt.split(' '); // commitCode.innerText.split('').reverse();
+  var targetText = txt.split(' ');
+  var currentText = new Array(targetText.length).fill('x');
+  animateIn = setInterval(
+    () => {
+      commitCode.innerText = currentText.join(' ');
+      currentText.push(targetText.pop())
+      if (!targetText.length) {
+        clearInterval(animateIn);
+        console.log('done');
+      }
+    }, 50);
+}
+// ntxt is new text that should animate in
+function animateCommit (ntext) {
+  // just use first thousand lines
+  ntext =  ntext.slice(0, 5000);
+  // animateTextOut(ntext);
+  
+  commitCode.innerText = ntext;
+  // animate current code out
+
+  // animate next code in 
+  // var shuffleInterval = setInterval(function(){
+
+    // // Generate random strings. You can modify the generator function range
+    // // (Math.random()*(to-from+1)+from);
+    // var shuffledText = '';
+    // var j = originalText.length;
+    // while(j--) shuffledText += String.fromCharCode((Math.random()*94+33) | 0);
+    // // You can also use this generator to use only the remaining letters
+    // // while(j--) shuffledText += originalText[(Math.random()*j) | 0];
+
+    // // On every 10 cycles, remove a character from the original text to the decoded text
+    // if(i++ % 10 === 0) decryptedText += originalText.pop();
+
+    // // Display
+    // decrypted.textContent = decryptedText;
+    // encrypted.textContent = shuffledText;
+
+    // // Stop when done
+    // if(!shuffledText.length) clearInterval(shuffleInterval);
+
+  //   // 50ms looks more dramatic
+  // },50);
+
 }
 
 // Summary of activity for the lead. I'm sure there are slicker ways to calculate this
@@ -115,6 +178,7 @@ function init() {
    */
   updateSummary();
   container = document.createElement('div');
+  container.classList.add("easel");
   el.appendChild(container);
   camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 10000);
   scene = new THREE.Scene();

@@ -166,6 +166,11 @@ em {
   padding: 10%;
 }
 
+/* // allows code scrolling */
+.easel {
+  pointer-events: none;
+}
+
 .art:hover .code-show {
   opacity: 1;
   color: $good;
